@@ -1,17 +1,51 @@
 package com.lsw.myapplication.ui
 
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothSocket
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.nio.charset.Charset
-import java.util.UUID
 
 // based on https://stackoverflow.com/questions/13450406/how-to-receive-serial-data-using-android-bluetooth
 
+class MBluetoothSocketOn(
+    val m_device: BluetoothDevice,
+    val m_recv: (String) -> Unit
+) {
+    fun send(data: String)
+    {
+
+    }
+}
+
 @SuppressLint("MissingPermission")
+@Suppress("DEPRECATION") // Older Android doesn't even know the newest way, so we have to work like this.
+class MBluetoothWrapper() {
+    private lateinit var m_adapter: BluetoothAdapter
+    private var m_nobt: Boolean = false
+
+    val m_devices: Set<BluetoothDevice>
+        get() { if (m_nobt) {return setOf<BluetoothDevice>() } else {return m_adapter.bondedDevices} }
+
+    val is_enabled: Boolean
+        get() { if (m_nobt) {return false} else {return m_adapter.isEnabled} }
+
+    init {
+        val bttest: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+
+        if (bttest == null) {
+            m_nobt = true
+        }
+        else {
+            m_nobt = false
+            m_adapter = bttest
+        }
+    }
+
+}
+
+
+
+
+/*@SuppressLint("MissingPermission")
 class BluetoothConnectedDevice (
     val device: BluetoothDevice,
     val cb_new_msg: (String, String) -> Unit
@@ -101,4 +135,4 @@ class BluetoothConnectedDevice (
         m_in.close()
         socket.close()
     }
-}
+}*/

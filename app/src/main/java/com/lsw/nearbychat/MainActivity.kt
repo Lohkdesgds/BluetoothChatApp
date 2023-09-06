@@ -1,32 +1,41 @@
 @file:OptIn(ExperimentalComposeUiApi::class)
 
-package com.lsw.myapplication
+package com.lsw.nearbychat
 
 
 import android.os.Bundle
+import android.preference.PreferenceManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ExperimentalComposeUiApi
-import com.lsw.myapplication.ui.MNearbyWork
-import com.lsw.myapplication.ui.theme.MyApplicationTheme
+import com.lsw.nearbychat.ui.MNearbyWork
+import com.lsw.nearbychat.ui.theme.MyApplicationTheme
 import java.util.concurrent.Executors
 
+@Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
-    val m_display = mutableStateOf(MDisplay(::inputCmdHandler, ::tunnelBroadcastSelf))
+    lateinit var m_pref: MPreferences
+    lateinit var m_display: MutableState<MDisplay>
     val m_exec = Executors.newFixedThreadPool(2)
     val m_nearby = MNearbyWork(this, this, m_nick_fcn = ::tunnelGetInnerSelfName, m_post_received = ::tunnelOthersMessage, m_system_message = ::tunnelSystemMessage)
     //var m_waiting_for_bt: Boolean = false
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestAllPermissions(this)
 
+        m_pref = MPreferences(PreferenceManager.getDefaultSharedPreferences(this))
+        m_display = mutableStateOf(MDisplay(
+            m_pref,
+            this,
+            ::inputCmdHandler,
+            ::tunnelBroadcastSelf)
+        )
+
         setContent {
-            MyApplicationTheme {
-                m_display.value.draw()
-            }
+            MyApplicationTheme { m_display.value.draw() }
         }
     }
 
@@ -40,6 +49,7 @@ class MainActivity : ComponentActivity() {
                         val tmp = inn.substring("/nick ".length)
                         if (tmp.length > 0) {
                             m_display.value.m_self_name = tmp
+                            m_pref.set("username", tmp)
                             m_display.value.post_system("Changed nick to ${m_display.value.m_self_name}")
                         }
                         else{

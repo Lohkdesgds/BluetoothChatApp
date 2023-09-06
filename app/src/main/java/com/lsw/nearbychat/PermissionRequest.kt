@@ -1,4 +1,4 @@
-package com.lsw.myapplication
+package com.lsw.nearbychat
 
 import android.Manifest
 import android.content.pm.PackageManager

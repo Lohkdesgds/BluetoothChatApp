@@ -1,4 +1,4 @@
-package com.lsw.myapplication
+package com.lsw.nearbychat
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

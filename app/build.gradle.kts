@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.lsw.myapplication"
+    namespace = "com.lsw.nearbychat"
     compileSdk = 33
 
     defaultConfig {
-        applicationId = "com.lsw.myapplication"
+        applicationId = "com.lsw.nearbychat"
         minSdk = 24
         targetSdk = 33
         versionCode = 1
@@ -23,6 +23,12 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            isDebuggable = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        debug {
+            isMinifyEnabled = false
+            isDebuggable = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

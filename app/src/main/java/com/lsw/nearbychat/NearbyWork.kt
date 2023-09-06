@@ -1,4 +1,4 @@
-package com.lsw.myapplication.ui
+package com.lsw.nearbychat.ui
 
 import android.R
 import android.app.Activity
@@ -66,7 +66,7 @@ class MNearbyWork(
 
         val advertisingOptions = AdvertisingOptions.Builder().setStrategy(c_strategy).build()
 
-        val test = Nearby.getConnectionsClient(context)
+        Nearby.getConnectionsClient(context)
             .startAdvertising(
                m_nick_fcn(), c_appid_nb, connectionLifecycleCallback, advertisingOptions
             )
@@ -141,13 +141,13 @@ class MNearbyWork(
                 .setMessage("Confirm the code matches on both devices: " + info.authenticationDigits)
                 .setPositiveButton(
                     "Accept"
-                ) { dialog: DialogInterface?, which: Int ->  // The user confirmed, so we can accept the connection.
+                ) { _: DialogInterface?, _: Int ->  // The user confirmed, so we can accept the connection.
                     Nearby.getConnectionsClient(context)
                         .acceptConnection(endpointId, payloadCallback)
                 }
                 .setNegativeButton(
                     R.string.cancel
-                ) { dialog: DialogInterface?, which: Int ->  // The user canceled, so we should reject the connection.
+                ) { _: DialogInterface?, _: Int ->  // The user canceled, so we should reject the connection.
                     Nearby.getConnectionsClient(context).rejectConnection(endpointId)
                 }
                 .setIcon(R.drawable.ic_dialog_alert)
@@ -227,20 +227,6 @@ class MNearbyWork(
 
             when (update.status) {
                 PayloadTransferUpdate.Status.SUCCESS -> {
-                    /*val test = m_payload_loading[endpointId];
-
-                    if (test != null) {
-                        val tmp: String = test
-
-                        if (tmp.indexOf('\n') == -1) return
-
-                        m_post_received(
-                            tmp.substring(0, tmp.indexOf('\n')),
-                            tmp.substring(tmp.indexOf('\n') + 1)
-                        )
-                    }
-
-                    m_payload_loading.remove(endpointId)*/
                 }
                 PayloadTransferUpdate.Status.IN_PROGRESS -> {}
                 PayloadTransferUpdate.Status.CANCELED -> {

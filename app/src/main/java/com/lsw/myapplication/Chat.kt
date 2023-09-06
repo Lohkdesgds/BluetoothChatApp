@@ -74,30 +74,44 @@ class MMessageCard(val m_ath: String, val m_msg: String, val is_sys: Boolean){
     }
 }
 
-class MDisplay(private val m_input_handler: (String) -> Boolean) {
+class MDisplay(private val m_input_handler: (String) -> Boolean, private val m_output_copy: (String, String) -> Unit) {
     companion object {
         const val MAX_MESSAGES_ON_LIST: Int = 30
         val OFFSET_FIX_INPUT_DP: Dp = 18.dp
     }
 
+    var m_self_name: String = "Self_" + (Math.floor(Math.random() * 9999999.0f)).toInt().toString() + (Math.floor(Math.random() * 9999999.0f)).toInt().toString()
     private val m_input_value: MutableState<String> = mutableStateOf("")
     private val m_message_list: MutableState<List<MutableState<MMessageCard>>> = mutableStateOf(arrayListOf<MutableState<MMessageCard>>())
 
     init {
-        post("SYSTEM", "Hello there!", true)
-        post("SYSTEM", "Welcome to BluetoothChat App, made by Lohk!", true)
-        post("SYSTEM", "This application uses command lines for most stuff.", true)
-        post("SYSTEM", "You can try to use something like /listbt to list all devices on your Bluetooth settings", true)
-        post("SYSTEM", "This is a WIP app. Please send feedback to @lohkdesgds", true)
-        post("SYSTEM", "Hopefully this will work well someday!", true)
+        post_system("Hello there!")
+        post_system("Welcome to BluetoothChat App, made by Lohk!")
+        post_system("This application uses command lines for most stuff.")
+        post_system("This is a WIP app. Please send feedback to @lohkdesgds")
+        post_system("Hopefully this will work well someday!")
+        post_system("Your name was set to $m_self_name. Change with /nick")
     }
 
-    fun post(ath: String, msg: String, is_sys: Boolean){
-        if (msg.length > 0) m_message_list.value += mutableStateOf(MMessageCard(ath, msg, is_sys))
-        else m_message_list.value += mutableStateOf(MMessageCard(ath, "<empty>", is_sys))
-
-        if (m_message_list.value.size > MAX_MESSAGES_ON_LIST) m_message_list.value = m_message_list.value.drop(1)
+    // this will broadcast
+    fun post_self_auto(msg: String)
+    {
+        m_output_copy(m_self_name, msg)
+        post(m_self_name, msg, false)
     }
+
+    // this is local
+    fun post_other_auto(ath: String, msg: String)
+    {
+        post(ath, msg, false)
+    }
+
+    // this is local
+    fun post_system(msg: String)
+    {
+        post("SYSTEM", msg, true)
+    }
+
 
     @Composable
     fun draw(/*localDensity : Density*/)
@@ -171,8 +185,15 @@ class MDisplay(private val m_input_handler: (String) -> Boolean) {
     private fun post_input_clr()
     {
         if (!m_input_handler(m_input_value.value)) {
-            post("Self", m_input_value.value, false)
+            post_self_auto(m_input_value.value)
         }
         m_input_value.value = "";
+    }
+
+    private fun post(ath: String, msg: String, is_sys: Boolean){
+        if (msg.length > 0) m_message_list.value += mutableStateOf(MMessageCard(ath, msg, is_sys))
+        else m_message_list.value += mutableStateOf(MMessageCard(ath, "<empty>", is_sys))
+
+        if (m_message_list.value.size > MAX_MESSAGES_ON_LIST) m_message_list.value = m_message_list.value.drop(1)
     }
 }

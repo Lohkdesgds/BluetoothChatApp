@@ -1,4 +1,4 @@
-package com.lsw.myapplication.ui.theme
+package com.lsw.nearbychat.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

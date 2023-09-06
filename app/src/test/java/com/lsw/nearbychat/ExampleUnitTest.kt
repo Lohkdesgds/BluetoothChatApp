@@ -1,4 +1,4 @@
-package com.lsw.myapplication
+package com.lsw.nearbychat
 
 import org.junit.Test
 

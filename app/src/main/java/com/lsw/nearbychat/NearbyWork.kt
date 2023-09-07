@@ -38,7 +38,7 @@ class MNearbyWork(
     }
 
     private lateinit var connectionsClient: ConnectionsClient
-    private var m_friend: ArrayList<String> = arrayListOf<String>()
+    private var m_friend: MutableMap<String, String> = mutableMapOf<String, String>() // id, nick
 
     private var is_advertising: Boolean = false
     private var is_discoverying: Boolean = false
@@ -46,13 +46,27 @@ class MNearbyWork(
     // no need, byte payload goes as one: https://developers.google.com/nearby/connections/android/exchange-data?hl=en#bytes
     //private var m_payload_loading: MutableMap<String, String> = mutableMapOf<String, String>() // no need
 
+    fun friendCount() : Int {
+        return m_friend.size
+    }
+
+    fun friendList() : List<String>
+    {
+        var lst = arrayListOf<String>()
+        m_friend.forEach { _, nick -> lst.add(nick) }
+        return lst.toList()
+    }
 
     fun send(ath: String, msg: String)
     {
         if (m_friend.size > 0) {
             val obj = ath + "\n" + msg
+            var lst = arrayListOf<String>()
+
+            m_friend.forEach { id, _ -> lst.add(id) }
+
             connectionsClient.sendPayload(
-                m_friend.toList(),
+                lst.toList(),
                 Payload.fromBytes(obj.toByteArray(UTF_8))
             )
         }
@@ -71,7 +85,7 @@ class MNearbyWork(
                m_nick_fcn(), c_appid_nb, connectionLifecycleCallback, advertisingOptions
             )
             .addOnSuccessListener(
-                OnSuccessListener<Void> { m_system_message("Started advertising you to others successfully!") }
+                OnSuccessListener<Void> { m_system_message("Started advertising you to others successfully!"); is_advertising = true  }
             )
             .addOnFailureListener(
                 OnFailureListener { e: Exception? -> m_system_message("Failed to start advertisement. Reason: ${e?.toString() ?: "unknown"}"); stopAndCleanUp() }
@@ -89,7 +103,7 @@ class MNearbyWork(
         Nearby.getConnectionsClient(context)
             .startDiscovery(c_appid_nb, endpointDiscoveryCallback, discoveryOptions)
             .addOnSuccessListener(
-                OnSuccessListener<Void> { m_system_message("Started discovery successfully!") }
+                OnSuccessListener<Void> { m_system_message("Started discovery successfully!"); is_discoverying = true }
             )
             .addOnFailureListener(
                 OnFailureListener { e: Exception? -> m_system_message("Failed to start discovery. Reason: ${e?.toString() ?: "unknown"}"); stopAndCleanUp() }
@@ -116,14 +130,14 @@ class MNearbyWork(
         if (!::connectionsClient.isInitialized) connectionsClient = Nearby.getConnectionsClient(activity)
     }
 
-    private fun addFriend(fr: String)
+    private fun addFriend(fr: String, nick: String)
     {
-        if (m_friend.indexOf(fr) == -1) m_friend.add(fr)
+        if (!m_friend.containsKey(fr)) m_friend[fr] = nick
     }
 
     private fun delFriend(fr: String)
     {
-        if (m_friend.indexOf(fr) != -1) m_friend.remove(fr)
+        if (m_friend.containsKey(fr)) m_friend.remove(fr)
     }
 
     // Callbacks for connections to other devices
@@ -134,6 +148,13 @@ class MNearbyWork(
             // that you attach a PayloadCall to the acceptance
             //connectionsClient.acceptConnection(endpointId, payloadCallback)
             //opponentName = "Opponent\n(${info.endpointName})"
+
+            if (info.endpointName == m_nick_fcn() || m_friend.containsKey(endpointId)) {
+                m_system_message("New endpoint $endpointId (${info.endpointName}) tried to connect, but nick is already present. Cancelled automatically")
+                Nearby.getConnectionsClient(context).rejectConnection(endpointId)
+                return;
+            }
+
             m_system_message("New endpoint connecting! $endpointId (${info.endpointName}) [requires simple auth]")
 
             AlertDialog.Builder(context)
@@ -144,6 +165,8 @@ class MNearbyWork(
                 ) { _: DialogInterface?, _: Int ->  // The user confirmed, so we can accept the connection.
                     Nearby.getConnectionsClient(context)
                         .acceptConnection(endpointId, payloadCallback)
+
+                    addFriend(endpointId, info.endpointName)
                 }
                 .setNegativeButton(
                     R.string.cancel
@@ -157,7 +180,7 @@ class MNearbyWork(
         override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
             if (result.status.isSuccess) {
                 m_system_message("New endpoint connected successfully! $endpointId")
-                addFriend(endpointId)
+
                 /*connectionsClient.stopAdvertising()
                 connectionsClient.stopDiscovery()
                 opponentEndpointId = endpointId
@@ -186,7 +209,7 @@ class MNearbyWork(
             m_system_message("Found an endpoint: $endpointId! (${info.endpointName})")
             connectionsClient.requestConnection(m_nick_fcn(), endpointId, connectionLifecycleCallback)
                 .addOnSuccessListener(
-                    OnSuccessListener<Void> { m_system_message("Endpoint $endpointId (${info.endpointName}) works!"); addFriend(endpointId) }
+                    OnSuccessListener<Void> { m_system_message("Endpoint $endpointId (${info.endpointName}) works!"); addFriend(endpointId, info.endpointName) }
                 )
                 .addOnFailureListener(
                     OnFailureListener { e: Exception? ->
@@ -208,16 +231,22 @@ class MNearbyWork(
     private val payloadCallback: PayloadCallback = object : PayloadCallback() {
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
             payload.asBytes()?.let {
-                /*if (m_payload_loading[endpointId] == null) m_payload_loading[endpointId] = it.toString()
-                else m_payload_loading[endpointId] += it.toString()*/
-                val tmp: String = it.toString(UTF_8)
 
+                val tmp: String = it.toString(UTF_8)
                 if (tmp.indexOf('\n') == -1) return
 
-                m_post_received(
-                    tmp.substring(0, tmp.indexOf('\n')),
-                    tmp.substring(tmp.indexOf('\n') + 1)
-                )
+                // strings
+                val ath = tmp.substring(0, tmp.indexOf('\n'))
+                val msg = tmp.substring(tmp.indexOf('\n') + 1)
+                val self_nick = m_nick_fcn()
+
+                if (ath != self_nick) { // self controlled, else wait for feedback from host
+                    m_post_received(ath, msg)
+                }
+
+                if (is_advertising) { // is host, broadcast
+                    send(ath, msg)
+                }
             }
         }
 

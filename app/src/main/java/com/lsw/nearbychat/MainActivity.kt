@@ -46,15 +46,50 @@ class MainActivity : ComponentActivity() {
             inn.startsWith("/nick") -> {
                 m_exec.execute( Runnable {
                     try {
-                        val tmp = inn.substring("/nick ".length)
-                        if (tmp.length > 0) {
-                            m_display.value.m_self_name = tmp
-                            m_pref.set("username", tmp)
-                            m_display.value.post_system("Changed nick to ${m_display.value.m_self_name}")
+                        if (m_nearby.friendCount() > 0) {
+                            m_display.value.post_system("You may not change your nick once connected to another device!")
                         }
-                        else{
-                            m_display.value.post_system("Invalid nick")
+                        else {
+                            val tmp = inn.substring("/nick ".length)
+                            if (tmp.length > 0) {
+                                m_display.value.m_self_name = tmp
+                                m_pref.set("username", tmp)
+                                m_display.value.post_system("Changed nick to ${m_display.value.m_self_name}")
+                            }
+                            else{
+                                m_display.value.post_system("Invalid nick")
+                            }
                         }
+                    }
+                    catch(e: Exception) {
+                        m_display.value.post_system("Bad news, EXCEPTION: $e")
+                    }
+                } )
+                true
+            }
+
+            inn.startsWith("/friendcount") -> {
+                m_exec.execute( Runnable {
+                    try {
+                        m_display.value.post_system("Friends connected to this device: ${m_nearby.friendCount()}")
+                    }
+                    catch(e: Exception) {
+                        m_display.value.post_system("Bad news, EXCEPTION: $e")
+                    }
+                } )
+                true
+            }
+
+            inn.startsWith("/friendlist") -> {
+                m_exec.execute( Runnable {
+                    try {
+                        var str: String = ""
+                        m_nearby.friendList().forEach {
+                            str += it + "\n"
+                        }
+                        if (str.length > 0) str.dropLast(1)
+
+                        m_display.value.post_system("Friends connected to this device:\n$str")
                     }
                     catch(e: Exception) {
                         m_display.value.post_system("Bad news, EXCEPTION: $e")
@@ -107,7 +142,7 @@ class MainActivity : ComponentActivity() {
 
             inn.startsWith("/") -> {
                 m_exec.execute( Runnable {
-                    m_display.value.post_system("Unrecognized command.\nPlease try:\n/nick <new nick>\n/advertise\n/discover\n/stopall")
+                    m_display.value.post_system("Unrecognized command.\nPlease try:\n/nick <new nick>\n/advertise\n/discover\n/stopall\n/friendcount\n/friendlist")
                 } )
                 true
             }

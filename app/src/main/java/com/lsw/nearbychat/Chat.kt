@@ -94,14 +94,20 @@ class MDisplay(private val m_pref: MPreferences, private val context: Context, p
     init {
         m_self_name = m_pref.get("username", "Self_" + (Math.floor(Math.random() * 9999999.0f)).toInt().toString() + (Math.floor(Math.random() * 9999999.0f)).toInt().toString())
 
-        populate_list_with(m_pref.getList("messages"))
+        val curr_msgs = m_pref.getList("messages")
+        populate_list_with(curr_msgs)
 
-        post_system("Hello there!")
-        post_system("Welcome to Nearby Chat App, made by Lohk!")
-        post_system("This application uses command lines for most stuff.")
-        post_system("This is a WIP app. Please send feedback to @lohkdesgds")
-        post_system("Hopefully this will work well someday!")
-        post_system("Your name was set to $m_self_name. Change with /nick")
+        if (curr_msgs.size == 0) {
+            post_system("Hello there!")
+            post_system("Welcome to Nearby Chat App, made by Lohk!")
+            post_system("This application uses command lines for most stuff.")
+            post_system("This is a WIP app. Please send feedback to @lohkdesgds")
+            post_system("Hopefully this will work well someday!")
+            post_system("Your name was set to $m_self_name. Change with /nick")
+        }
+        else {
+            post_system("Welcome back, $m_self_name!")
+        }
 
     }
 
